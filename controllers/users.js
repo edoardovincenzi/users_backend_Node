@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { User } from '../models/user.js';
 
 let users = [
   {
@@ -29,13 +30,16 @@ export const getUserById = (req, res) => {
   }
 };
 
-export const postUser = (req, res) => {
-  const user = { id: crypto.randomUUID(), ...req.body };
-  users.push(user);
-  res.send({
-    message: `L'utente con email ${user.email} aggiunto con successo.`,
-    data: users,
-  });
+export const postUser = async (req, res) => {
+  // const user = { id: crypto.randomUUID(), ...req.body };
+  const user = User(req.body);
+
+  try {
+    await user.save();
+    res.status(201).json(user);
+  } catch (error) {
+    res.status(409).json({ message: error.message });
+  }
 };
 
 export const patchUser = (req, res) => {
