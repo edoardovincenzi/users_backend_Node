@@ -1,32 +1,26 @@
-import crypto from 'crypto';
+import mongoose from 'mongoose';
 import { User } from '../models/user.js';
 
-let users = [
-  {
-    id: '1',
-    nome: 'Luca',
-    cognome: 'Rossi',
-    email: 'lica.rossi@gmail.it',
-  },
-  {
-    id: '2',
-    nome: 'Marco',
-    cognome: 'Verdi',
-    email: 'marco.verdi@gmail.it',
-  },
-];
-
-export const getAllUser = (req, res) => {
-  res.send(users);
+export const getAllUser = async (req, res) => {
+  try {
+    const users = await User.find();
+    res.status(200).json(users);
+  } catch (e) {
+    res.status(404).json({ message: error.message });
+  }
 };
 
-export const getUserById = (req, res) => {
+export const getUserById = async (req, res) => {
   const { id } = req.params;
-  if (id) {
-    const userById = users.find((user) => user.id == id);
-    res.send(userById);
+  if (id && mongoose.Types.ObjectId.isValid(id)) {
+    try {
+      const user = await User.findById(id);
+      res.status(200).json(user);
+    } catch (e) {
+      res.status(404).json({ message: error.message });
+    }
   } else {
-    res.status(404).send('No user found');
+    res.status(404).send('id not found or invalid');
   }
 };
 
@@ -42,21 +36,30 @@ export const postUser = async (req, res) => {
   }
 };
 
-export const patchUser = (req, res) => {
+export const patchUser = async (req, res) => {
   const { id } = req.params;
-  let userFound = users.find((user) => user.id === id);
-  users = users.filter((user) => user.id !== id);
-  userFound = { ...userFound, ...req.body };
-  users.push(userFound);
-  res.send(users);
+  if (id && mongoose.Types.ObjectId.isValid(id)) {
+    try {
+      const user = await User.findByIdAndUpdate(id, req.body, { new: true });
+      res.status(202).json(user);
+    } catch (error) {
+      res.status(404).json({ message: error.message });
+    }
+  } else {
+    res.status(404).send('Id not found found or invalid');
+  }
 };
 
-export const deleteUser = (req, res) => {
+export const deleteUser = async (req, res) => {
   const { id } = req.params;
-  if (id) {
-    users = users.filter((user) => user.id !== id);
-    res.send(`User with id: ${id} deleted`);
+  if (id && mongoose.Types.ObjectId.isValid(id)) {
+    try {
+      await User.findByIdAndDelete(id);
+      res.send(`User with id: ${id} deleted`);
+    } catch (error) {
+      res.status(404).json({ message: error.message });
+    }
   } else {
-    res.status(404).send('No user found');
+    res.status(404).send('Id not found found or invalid');
   }
 };
