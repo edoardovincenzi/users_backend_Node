@@ -1,6 +1,33 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { User } from '../models/user.js';
+import jwt from 'jsonwebtoken';
+
+export const JWT_SECRET = 'assdfdsfjodsofosdjfojsdfojfdsojojJOSDFJOOPJ23DAS';
+
+export const login = async (req, res) => {
+  const { username, password } = req.body;
+  const user = await User.findOne({ username });
+  if (!user) {
+    res
+      .status(401)
+      .json({ status: 'error', message: 'utente o password errata' });
+  }
+  if (await bcrypt.compare(password, user.password)) {
+    const token = jwt.sign(
+      {
+        id: user._id,
+        username: user.username,
+      },
+      JWT_SECRET
+    );
+    return res.json({ status: 'ok', data: token });
+  } else {
+    res
+      .status(401)
+      .json({ status: 'error', message: 'utente o password errata' });
+  }
+};
 
 export const register = async (req, res) => {
   const { username, password } = req.body;
@@ -19,13 +46,14 @@ export const register = async (req, res) => {
       status: 'error',
       message: 'password deve essere di almeno 5 caratteri',
     });
-  }
-  const passwordHashed = await bcrypt.hash(password, 10);
-  const user = new User({ username, password: passwordHashed });
-  try {
-    await user.save();
-    res.status(201).json(user);
-  } catch (e) {
-    res.status(404).json({ status: 'error', message: error.message });
+  } else {
+    const passwordHashed = await bcrypt.hash(password, 10);
+    const user = new User({ username, password: passwordHashed });
+    try {
+      await user.save();
+      res.status(201).json(user);
+    } catch (error) {
+      res.status(404).json({ status: 'error', message: error.message });
+    }
   }
 };
